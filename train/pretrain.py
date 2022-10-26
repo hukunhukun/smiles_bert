@@ -21,7 +21,7 @@ class smiles_BertTrainer:
         self.bert = bert
         self.model = BERTLM(bert, vocab_size).to(self.device)
 
-
+        self.vocab_size = vocab_size
         # Setting the train and test data loader
         self.train_data = train_dataloader
         self.test_data = test_dataloader
@@ -51,32 +51,61 @@ class smiles_BertTrainer:
 
                
         avg_loss = 0.0
-        i = 0
-        for x,label in data_loader:
-            x = x.to(self.device)
-            label = label.to(self.device)
-            output = self.model.forward(x)
-            pred = output.transpose(1, 2)
-            loss = self.criterion(pred, label)
+        total_correct = 0
+        num_not_pad = 0
 
-            if train:
+        i = 0
+        if train:
+            for x,label in data_loader:
+                x = x.to(self.device)
+                label = label.to(self.device)
+                output = self.model.forward(x)
+                pred = output.transpose(1, 2)
+                loss = self.criterion(pred, label)
+
                 self.optim_schedule.zero_grad()
                 loss.backward()
                 self.optim_schedule.step_and_update_lr()
+                avg_loss += loss.item()
 
 
-            avg_loss += loss.item()
+                if i % self.log_freq == 0:
+                    print("iter%d_%s, avg_loss=" % (i, str_code), avg_loss /(i+1)) 
+                i = i+1
+
+        else:
+            with torch.no_grad():
+                for x,label in data_loader:
+                    x = x.to(self.device)
+                    label = label.to(self.device)
+                    output = self.model.forward(x)
+                    pred = output.transpose(1, 2)
+                    loss = self.criterion(pred, label)
 
 
-            if i % self.log_freq == 0:
-                print("iter%d_%s, avg_loss=" % (i, str_code), avg_loss /(i+1))                            
+                    avg_loss += loss.item()
+                    pred = pred.argmax(dim=1)
+                    num = torch.ne(label,0).sum().item()
+                    for k in range(len(label)):
+                        for j in range(len(label[k])):
+                            if label[k][j]==0: label[k][j] = self.vocab_size + 1
+                    correct = torch.eq(pred,label).sum().float().item()
+                    if i % self.log_freq == 0:
+                        print("iter%d_%s, accu =" % (i, str_code), correct /(num)) 
+                        print("iter%d_%s, avg_loss=" % (i, str_code), avg_loss /(i+1))
+                    total_correct = total_correct + correct
+                    num_not_pad = num_not_pad + num
+               
+                    i = i+1
+    
+            print("EP%d_%s, avg_accu=" % (epoch, str_code), total_correct / num_not_pad)
         
-            i = i+1
+        
         print("EP%d_%s, avg_loss=" % (epoch, str_code), avg_loss / len(data_loader))
 
 
     
-    def save(self, epoch, file_path="output/smiles_bert_trained.model"):
+    def save(self, epoch, file_path="./output/"):
         """
         Saving the current BERT model on file_path
 
@@ -85,8 +114,9 @@ class smiles_BertTrainer:
         :return: final_output_path
         """
         
-        output_path = file_path + ".ep%d" % epoch
-        torch.save(self.bert.cpu(), output_path)
+        # output_path = file_path + ".ep%d" % epoch
+        torch.save(self.model.state_dict,file_path + 'BERTLM' + ".ep%d" % epoch + ".pt")
+        torch.save(self.bert.state_dict, file_path + 'BERT' + ".ep%d" % epoch + ".pt")
         self.bert.to(self.device)
-        print("EP:%d Model Saved on:" % epoch, output_path)
-        return output_path
+        print("EP:%d Model Saved on:" % epoch, file_path)
+       

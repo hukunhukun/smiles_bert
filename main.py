@@ -1,5 +1,5 @@
-from torch.utils.data import DataLoader
-
+from torch.utils.data import DataLoader,random_split
+import torch
 from model.smiles_BERT import BERT
 from dataset.dataset import SMILESBERTdataset
 from train.pretrain import smiles_BertTrainer
@@ -45,19 +45,28 @@ def train():
     # data_path = "./dataset/250k_rndm_zinc_drugs_clean.smi"
 
     print("Loading Train Dataset")
-    train_dataset = SMILESBERTdataset(args.data_path,args.seq_len)
+    smiles_dataset = SMILESBERTdataset(args.data_path,args.seq_len)
+
+    train_dataset,eval_dataset,test_dataset=random_split(smiles_dataset,[round(0.1*len(smiles_dataset)),len(smiles_dataset)- round(0.1*len(smiles_dataset)) -round(0.1*len(smiles_dataset)),round(0.1*len(smiles_dataset))],generator=torch.Generator().manual_seed(42)) 
+
+
+    train_data_loader = DataLoader(train_dataset, batch_size=args.batch_size)
+    test_data_loader = DataLoader(test_dataset, batch_size=args.batch_size)
+
+
 
     print("Creating Dataloader")
     train_data_loader = DataLoader(train_dataset, batch_size=args.batch_size)
+    test_data_loader = DataLoader(test_dataset, batch_size=args.batch_size)
 
-    print("vocab_size",train_dataset.vocab_size)
+    print("vocab_size",smiles_dataset.vocab_size)
 
     print("Building BERT model")
-    bert = BERT(train_dataset.vocab_size,hidden=args.hidden, n_layers=args.layers, attn_heads=args.attn_heads)
+    bert = BERT(smiles_dataset.vocab_size,hidden=args.hidden, n_layers=args.layers, attn_heads=args.attn_heads)
 
 
     print("Creating BERT Trainer")
-    trainer = smiles_BertTrainer(bert,train_dataset.vocab_size , train_dataloader=train_data_loader, test_dataloader=None,
+    trainer = smiles_BertTrainer(bert,smiles_dataset.vocab_size , train_dataloader=train_data_loader, test_dataloader=test_data_loader,
                         lr=args.lr, betas=(args.adam_beta1, args.adam_beta2), weight_decay=args.adam_weight_decay,
                           with_cuda=args.with_cuda, log_freq=args.log_freq )
 
@@ -68,6 +77,10 @@ def train():
         
     trainer.save(epoch,args.output_path)
 
-train()
+    print("Testing Start")
+    trainer.test(1)
 
-# python3 main.py -d "./dataset/250k_rndm_zinc_drugs_clean.smi" -o "output/bert.model" -s 81 -b 128 --with_cuda True
+if __name__ == "__main__":
+    train()
+
+# python3 main.py -d "./dataset/250k_rndm_zinc_drugs_clean.smi" -o "output/" -s 81 -b 128 --with_cuda True

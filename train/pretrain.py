@@ -14,7 +14,7 @@ class smiles_BertTrainer:
 
     def __init__(self,bert:BERT,vocab_size: int,train_dataloader:DataLoader, test_dataloader: DataLoader = None,
     lr: float = 1e-4, betas=(0.9, 0.999), weight_decay: float = 0.01, warmup_steps=10000,
-                 with_cuda: bool = True, cuda_devices=None, log_freq: int = 100):
+                 with_cuda: bool = True, log_freq: int = 10):
         
         # Setup cuda device for BERT training
         self.device = torch.device("cuda:0" if (torch.cuda.is_available() and with_cuda) else "cpu")

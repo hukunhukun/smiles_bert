@@ -157,5 +157,6 @@ class SMILESBERTdataset(Dataset):
 
 """a test for Dataset"""
 if __name__ == "__main__":
-    MyData = SMILESBERTdataset("./dataset/test.smi",81)
-    print(MyData.word2idx)
+    MyData = SMILESBERTdataset("./dataset/250k_rndm_zinc_drugs_clean.smi",81)
+    print(MyData.input[0])
+    print(MyData.label[0])

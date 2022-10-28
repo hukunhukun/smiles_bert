@@ -20,12 +20,8 @@ def train(seq_len,batch_size,hidden,layers,attn_heads,epochs,output_path):
     print("Loading Train Dataset")
     smiles_dataset = SMILESBERTdataset(data_path,seq_len)
 
-    train_dataset,eval_dataset,test_dataset=random_split(smiles_dataset,[round(0.1*len(smiles_dataset)),len(smiles_dataset)- round(0.1*len(smiles_dataset)) -round(0.1*len(smiles_dataset)),round(0.1*len(smiles_dataset))],generator=torch.Generator().manual_seed(42)) 
+    train_dataset,eval_dataset,test_dataset=random_split(smiles_dataset,[round(0.8*len(smiles_dataset)),len(smiles_dataset)- round(0.8*len(smiles_dataset)) -round(0.1*len(smiles_dataset)),round(0.1*len(smiles_dataset))],generator=torch.Generator().manual_seed(42)) 
 
-
-    print(len(train_dataset))
-    print(len(eval_dataset))
-    print(len(test_dataset))
 
     print("Creating Dataloader")
     train_data_loader = DataLoader(train_dataset, batch_size=batch_size)
@@ -51,6 +47,6 @@ def train(seq_len,batch_size,hidden,layers,attn_heads,epochs,output_path):
     trainer.test(1)
 
 if __name__ == "__main__":
-    train(81,128,512,6,8,10,"./output/")
+    train(81,256,512,6,8,10,"./output/")
 
 # python3 main.py -d "./dataset/250k_rndm_zinc_drugs_clean.smi" -o "output/" -s 81 -b 128 --with_cuda True

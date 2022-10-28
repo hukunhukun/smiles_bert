@@ -115,8 +115,8 @@ class smiles_BertTrainer:
         """
         
         # output_path = file_path + ".ep%d" % epoch
-        torch.save(self.model.state_dict,file_path + 'BERTLM' + ".ep%d" % epoch + ".pt")
-        torch.save(self.bert.state_dict, file_path + 'BERT' + ".ep%d" % epoch + ".pt")
+        torch.save(self.model.state_dict(),file_path + 'BERTLM' + ".ep%d" % epoch + ".pt")
+        torch.save(self.bert.state_dict(), file_path + 'BERT' + ".ep%d" % epoch + ".pt")
         self.bert.to(self.device)
         print("EP:%d Model Saved on:" % epoch, file_path)
        
